@@ -1,1 +1,121 @@
 
+#include <IRremote.h>
+#include <Servo.h>
+
+// ====== CÓDIGOS IR DE MOVIMIENTO ======
+const unsigned long IR_ADELANTE = 3877175040;
+const unsigned long IR_ATRAS    = 2907897600;
+const unsigned long IR_IZQ      = 4144561920;
+const unsigned long IR_DER      = 2774204160;
+const unsigned long IR_STOP     = 3810328320;
+
+// ====== CÓDIGOS IR PARA SERVO ======
+const unsigned long IR_SERVO_IZQ   = 3125149440;  // Botón 1
+const unsigned long IR_SERVO_CENTRO= 3108437760;  // Botón 2
+const unsigned long IR_SERVO_DER   = 3091726080;  // Botón 3
+
+// ===== Pines DRV8833 =====
+int AIN1 = 6;
+int AIN2 = 5;
+int BIN1 = 8;
+int BIN2 = 7;
+
+// ===== Servo =====
+Servo servoCabeza;
+
+// ===== Receptor IR =====
+int pinIR = 2;
+
+void setup() {
+  Serial.begin(9600);
+
+  // Iniciar receptor IR
+  IrReceiver.begin(pinIR, ENABLE_LED_FEEDBACK);
+
+  // Configurar pines de motores
+  pinMode(AIN1, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+  pinMode(BIN1, OUTPUT);
+  pinMode(BIN2, OUTPUT);
+
+  // Configurar servo
+  servoCabeza.attach(9);
+  servoCabeza.write(90); // posición central
+
+  detener();
+}
+
+// ===== MOVIMIENTO DEL ROBOT =====
+void adelante() {
+  digitalWrite(AIN1, HIGH);
+  digitalWrite(AIN2, LOW);
+  digitalWrite(BIN1, HIGH);
+  digitalWrite(BIN2, LOW);
+}
+
+void atras() {
+  digitalWrite(AIN1, LOW);
+  digitalWrite(AIN2, HIGH);
+  digitalWrite(BIN1, LOW);
+  digitalWrite(BIN2, HIGH);
+}
+
+void izquierda() {
+  digitalWrite(AIN1, LOW);
+  digitalWrite(AIN2, HIGH);
+  digitalWrite(BIN1, HIGH);
+  digitalWrite(BIN2, LOW);
+}
+
+void derecha() {
+  digitalWrite(AIN1, HIGH);
+  digitalWrite(AIN2, LOW);
+  digitalWrite(BIN1, LOW);
+  digitalWrite(BIN2, HIGH);
+}
+
+void detener() {
+  digitalWrite(AIN1, LOW);
+  digitalWrite(AIN2, LOW);
+  digitalWrite(BIN1, LOW);
+  digitalWrite(BIN2, LOW);
+}
+
+// ===== CONTROL DEL SERVO =====
+void servoIzq() {
+  servoCabeza.write(40);
+}
+
+void servoCentro() {
+  servoCabeza.write(90);
+}
+
+void servoDer() {
+  servoCabeza.write(140);
+}
+
+// ===== LOOP PRINCIPAL =====
+void loop() {
+
+  if (IrReceiver.decode()) {
+
+    unsigned long codigo = IrReceiver.decodedIRData.decodedRawData;
+    Serial.println(codigo);
+
+    // ===== MOTORES =====
+    if (codigo == IR_ADELANTE)       adelante();
+    else if (codigo == IR_ATRAS)     atras();
+    else if (codigo == IR_IZQ)       izquierda();
+    else if (codigo == IR_DER)       derecha();
+    else if (codigo == IR_STOP)      detener();
+
+    // ===== SERVO =====
+    else if (codigo == IR_SERVO_IZQ)     servoIzq();
+    else if (codigo == IR_SERVO_CENTRO)  servoCentro();
+    else if (codigo == IR_SERVO_DER)     servoDer();
+
+    else detener();  // cualquier otro botón → STOP
+
+    IrReceiver.resume();
+  }
+}
